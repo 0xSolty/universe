@@ -41,6 +41,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--tx)
 #actions button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:var(--tx);border-radius:999px;font:500 13px M;padding:8px 14px;cursor:pointer}
 #actions #share{border-color:rgba(255,179,107,.6);color:var(--acc)}
 @media (max-width:420px){#actions{gap:6px}#actions button{font-size:12px;padding:7px 10px}}
+#bubs{position:fixed;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+.bub{position:absolute;left:0;top:0;transform:translate(-50%,-100%) scale(.5);transform-origin:50% 100%;opacity:0;transition:opacity .2s,transform .3s cubic-bezier(.3,1.7,.5,1);background:#f4efff;color:#0b0816;font:500 13px M;line-height:1.35;padding:8px 12px;border-radius:14px;width:max-content;max-width:210px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.35)}
+.bub:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#f4efff}
+.bub.on{opacity:1;transform:translate(-50%,-100%) scale(1)}
+.bub.hid{opacity:0}
+.bub small{display:block;font-size:11px;color:#6b6585;margin-top:2px}
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:4}
 #by{position:fixed;right:14px;bottom:10px;font:400 12px M;color:rgba(255,255,255,.35);z-index:6;text-decoration:none}
 #by:hover{color:#fff}
@@ -57,11 +63,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--tx)
 <body>
 <canvas id="gl"></canvas>
 <div id="flash"></div>
+<div id="bubs"></div>
 <div id="title"><div class="k">the planet of</div><div class="w" id="tw"></div><div class="s" id="ts"></div></div>
 <div id="ui">
  <form id="form" autocomplete="off"><input id="word" maxlength="40" placeholder="type any word…" aria-label="word"><button id="go" type="submit">create</button></form>
  <div id="actions"><button id="save" type="button">save</button><button id="share" type="button">share on X</button><button id="copy" type="button">copy link</button><button id="snd" type="button">sound: on</button></div>
- <div id="chips">try: <button>your name</button><button>monday</button><button>pizza</button><button>my ex</button><button>cat</button><button>coffee</button><button>money</button></div>
+ <div id="chips">try: <button>your name</button><button>monday</button><button>pizza</button><button>me + my crush</button><button>my ex</button><button>cat</button><button>coffee</button><button>money</button></div>
 </div>
 <a id="by" href="https://x.com/0xSolty" target="_blank" rel="noopener">by @0xSolty</a>
 <div id="filmcap"><div id="filmbox"><span id="filmtxt"></span><i id="filmcur"></i></div></div>
@@ -315,7 +322,7 @@ let born=0,audio=null,soundOn=true;
 function camHome(){const a=innerWidth/innerHeight;const d=a<0.7?29:a<1?23:19;camera.position.set(0,d*0.24,d)}
 function showTitle(u){$('tw').textContent=u.word;$('ts').textContent=u.stats;$('title').style.opacity=1;$('actions').style.opacity=1}
 function flash(){const f=$('flash');f.style.transition='none';f.style.opacity=0.85;requestAnimationFrame(()=>requestAnimationFrame(()=>{f.style.transition='opacity 1.1s';f.style.opacity=0}))}
-function create(word){word=(word||'').trim().slice(0,40);if(!word)return;build(word);born=performance.now();flash();showTitle(U);if(controls){camHome();controls.target.set(0,0.6,0)}history.replaceState(null,'','?u='+encodeURIComponent(word));playMusic(U)}
+function create(word){word=(word||'').trim().slice(0,40);if(!word)return;spawn(word);born=performance.now();U.helloAt=born+2100;if(U2)U2.helloAt=born+3300;flash();showTitle(U);if(controls){camHome();controls.target.set(0,0.6,0)}history.replaceState(null,'','?u='+encodeURIComponent(word));playMusic(U)}
 function playMusic(u){if(!soundOn)return;try{audio&&audio.close();audio=new (window.AudioContext||window.webkitAudioContext)();const ctx=audio;const r=mulberry(u.music.seed);const master=ctx.createGain();master.gain.value=0.18;master.connect(ctx.destination);
  const dl=ctx.createDelay(1);dl.delayTime.value=60/u.music.bpm*0.75;const fb=ctx.createGain();fb.gain.value=0.35;dl.connect(fb);fb.connect(dl);dl.connect(master);
  const note=(n,t0,d,g,type)=>{const o=ctx.createOscillator(),e=ctx.createGain();o.type=type;o.frequency.value=440*Math.pow(2,(n-69)/12);e.gain.setValueAtTime(0,t0);e.gain.linearRampToValueAtTime(g,t0+0.02);e.gain.exponentialRampToValueAtTime(0.0001,t0+d);o.connect(e);e.connect(master);e.connect(dl);o.start(t0);o.stop(t0+d+0.05)};
@@ -331,9 +338,75 @@ $('save').addEventListener('click',async()=>{composer.render();const name='plane
  if(matchMedia('(pointer:coarse)').matches&&navigator.canShare){const b=atob(url.split(',')[1]),arr=new Uint8Array(b.length);for(let i=0;i<b.length;i++)arr[i]=b.charCodeAt(i);const file=new File([arr],name,{type:'image/png'});
   if(navigator.canShare({files:[file]})){try{await navigator.share({files:[file]})}catch(e){}return}}
  const a=document.createElement('a');a.download=name;a.href=url;a.click()});
-$('share').addEventListener('click',()=>{const text='the planet of "'+(U?U.word:'')+'" 🪐\n\nwhat\'s yours?';open('https://x.com/intent/post?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(shareUrl()),'_blank','noopener')});
+$('share').addEventListener('click',()=>{const text=U2?'"'+U.self+'" + "'+U2.self+'" = '+U.pct+'% compatible 🪐\n\ntry yours:':'the planet of "'+(U?U.word:'')+'" 🪐\n\nwhat\'s yours?';open('https://x.com/intent/post?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(shareUrl()),'_blank','noopener')});
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);$('copy').textContent='copied ✓';setTimeout(()=>$('copy').textContent='copy link',1500)}catch(e){}});
 $('snd').addEventListener('click',()=>{soundOn=!soundOn;$('snd').textContent='sound: '+(soundOn?'on':'off');if(!soundOn&&audio)audio.close()});
+// ---------- pairs + blip talk ----------
+// "a + b" / "a x b" / "a vs b" / "a & b" -> two planets. each one is built from its own word, so it matches its solo planet.
+let U2=null,bond=null;
+const PAIR_RE=/\s+\+\s+|(?<=[^\s+])\+(?=[^\s+])|\s+(?:x|vs|&)\s+/i;
+function splitPair(w){const p=w.split(PAIR_RE).map(s=>s.trim()).filter(Boolean);return p.length===2?p:null}
+function compat(a,b){a=a.toLowerCase();b=b.toLowerCase();if(a===b)return 100;return Math.floor(hash('pair:'+[a,b].sort().join('|'))/4294967296)%100}
+function verdict(p){return p>=100?'same planet, twice':p>=90?'cosmic soulmates':p>=75?'orbiting each other':p>=55?'it could work':p>=35?"it's complicated":p>=15?'the universe says no':'do not.'}
+function dropU(u){if(!u)return;if(u.bub)u.bub.remove();scene.remove(u.root);u.root.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){[].concat(o.material).forEach(m=>{['map','emissiveMap'].forEach(k=>m[k]&&m[k].dispose());m.dispose()})}})}
+function spawn(word){if(U&&U.bub)U.bub.remove();dropU(U2);U2=null;if(bond){scene.remove(bond);bond.children.forEach(s=>s.material.dispose());bond=null}
+ const pr=splitPair(word);if(!FILM)document.querySelector('#title .k').textContent=pr?'two planets':'the planet of';
+ if(!pr){build(word);U.self=word;setupBlip(U);return}
+ build(pr[0]);const A=U;U=null;build(pr[1]);const B=U;U=A;U2=B;A.self=pr[0];B.self=pr[1];
+ // B shares A's sky + lights
+ B.root.children.slice().forEach(o=>{if(o.isLight||(o.isPoints&&o.material.sizeAttenuation===false)||B.nebs.includes(o)||o===B.sun){B.root.remove(o);o.traverse(k=>{if(k.geometry)k.geometry.dispose();if(k.material)k.material.dispose()})}});
+ A.pct=compat(pr[0],pr[1]);A.word=word;A.stats=A.pct+'% compatible · '+verdict(A.pct);
+ bond=new THREE.Group();scene.add(bond);const st=partTex('spark',Math.random,'#ffffff'),ca=new THREE.Color(A.th.atmo),cb=new THREE.Color(B.th.atmo);
+ for(let i=0;i<80;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:st,color:ca.clone().lerp(cb,(i%40)/39),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0}));s.scale.setScalar(0.16+(i*7%10)/45);s.userData={off:i/80*3.7%1,dir:i%2,side:(i*13%7)/7-0.5};bond.add(s)}
+ setupBlip(A);setupBlip(B)}
+const _a=new THREE.Vector3(),_b=new THREE.Vector3();
+function pairPose(t){const asp=innerWidth/innerHeight,port=asp<1;const ang=(port?Math.PI/2:0)+Math.sin(t*0.22)*0.28;const d=port?5.5:Math.min(6.4,4.4*asp),sc=port?0.6:Math.min(0.56,0.36*asp),cy=port?1.6:0.5;
+ const dx=Math.cos(ang)*d,dy=Math.sin(ang)*d,dz=Math.sin(t*0.37)*1.2;
+ U.root.scale.setScalar(sc);U2.root.scale.setScalar(sc);U.root.position.set(-dx,cy+dy,dz);U2.root.position.set(dx,cy-dy,-dz);
+ const f=eo((t-1.3)/1.2);_a.copy(U.root.position);_b.copy(U2.root.position);
+ bond.children.forEach(s=>{const k=s.userData,p=(t*0.16+k.off)%1,q=k.dir?1-p:p;s.position.lerpVectors(_a,_b,q);const arc=Math.sin(q*Math.PI);s.position.z+=arc*2.2;s.position.x+=arc*k.side*1.6*(port?1:0);s.position.y+=arc*k.side*1.6*(port?0:1);s.material.opacity=Math.pow(arc,1.5)*f*0.9})}
+// each blip gets a name and a few lines, seeded from its own word (separate hash, does not touch build())
+const SYL=['zo','bli','pip','ku','mo','nax','ree','tu','fli','gor','yo','zee','pa','lu','mi','ox','ka','bu','vy','do','snu','wib'];
+const LINES={code:['i wrote this planet in one prompt','it works on my planet','0 bugs. i ate them all','git push --force universe'],
+ forest:['i hug every tree. twice','photosynthesis is my cardio','the trees gossip about you'],
+ ocean:["i can't swim. don't tell anyone",'fish are just wet birds','the tide is my alarm clock'],
+ love:['i love you. i love everyone. help','please text back','my heart is the size of this planet'],
+ pizza:['pineapple is illegal here','i live on the crust. rent is cheap','3 pepperonis today. it is 9am'],
+ fire:["it's fine. everything's fine",'SPF 9000 and still crispy','hot take: it is hot'],
+ ice:['brrr. send hot cocoa',"i'm not cold, i'm chill",'my feet are stuck. 400 years now'],
+ storm:["it's monday here. forever",'struck by lightning 37 times','umbrella stocks are up'],
+ gold:["i'm rich but can't afford friends",'number go up','i bought the dip. i am the dip'],
+ neon:["haven't slept since 1987",'everything here is a vibe','the lights never turn off. help'],
+ desert:['water? never heard of it','sand gets EVERYWHERE',"i'm 99% sunscreen"],
+ dream:["shh. you're dreaming",'wake up. or don\'t','i collect wishes. got any?'],
+ crystal:["don't touch, i'm expensive","i'm basically a gem",'i shine on bad days too'],
+ toxic:["i'm fine, just glowing",'my therapist quit','10/10 would mutate again'],
+ coffee:['14 espressos. i can hear colors','decaf is illegal here','morning is a lie'],
+ cat:['i knocked your planet off the table','feed me. now',"i'm not a cat. i just live on one"],
+ dog:["who's a good planet? THIS ONE",'ball? BALL?? BALL!!!','i bark at the moons'],
+ mystery:["what's your word?"]};
+function setupBlip(u){if(FILM||!u.crit)return;const r=mulberry(Math.floor(hash('blip:'+u.self.toLowerCase())/4294967296)>>>0);let n='';for(let i=0,k=2+(r()<0.4);i<k;i++)n+=SYL[Math.floor(r()*SYL.length)];
+ u.name=n[0].toUpperCase()+n.slice(1);u.lines=LINES[u.id]||LINES.mystery;u.li=Math.floor(r()*u.lines.length);
+ u.hit=new THREE.Mesh(new THREE.SphereGeometry(1.4,12,8),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}));u.holder.add(u.hit);
+ u.bub=document.createElement('div');u.bub.className='bub';$('bubs').appendChild(u.bub)}
+function say(u,html,sec){if(!u||!u.bub)return;u.bub.innerHTML=html;u.bub.classList.remove('on');void u.bub.offsetWidth;u.bub.classList.add('on');u.sayUntil=performance.now()+sec*1000}
+function poke(u){u.jumpT=(performance.now()-born)/1000;say(u,u.lines[u.li++%u.lines.length],2.8);boing(u)}
+function hop(u,t){if(!u||!u.crit||u.jumpT==null)return;const d=(t-u.jumpT)/0.65;if(d<0||d>1)return;u.crit.position.y+=Math.sin(d*Math.PI)*1.1;u.crit.rotation.y+=eio(d)*Math.PI*2}
+function boing(u){if(!soundOn)return;try{if(!audio||audio.state==='closed')audio=new (window.AudioContext||window.webkitAudioContext)();const c=audio,o=c.createOscillator(),g=c.createGain(),t0=c.currentTime,f=440*Math.pow(2,(u.music.root-57)/12);o.type='square';o.frequency.setValueAtTime(f,t0);o.frequency.exponentialRampToValueAtTime(f*2.4,t0+0.12);g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(0.05,t0+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t0+0.2);o.connect(g);g.connect(c.destination);o.start(t0);o.stop(t0+0.22)}catch(e){}}
+const _w=new THREE.Vector3(),_c=new THREE.Vector3();
+function bubbles(){const now=performance.now();for(const u of [U,U2]){if(!u||!u.bub)continue;
+ if(u.helloAt&&now>u.helloAt){u.helloAt=0;say(u,"hi! i'm <b>"+u.name+'</b> 👋<small>tap me</small>',4.5)}
+ if(u.sayUntil&&now>u.sayUntil){u.sayUntil=0;u.bub.classList.remove('on')}
+ if(!u.bub.classList.contains('on'))continue;
+ const s=u.root.scale.x;u.holder.getWorldPosition(_w);_c.copy(camera.position).sub(_w);const front=_c.dot(NRM)>0;
+ _w.addScaledVector(NRM,1.25*s).project(camera);u.bub.classList.toggle('hid',!front||_w.z>1);
+ u.bub.style.left=((_w.x+1)/2*innerWidth).toFixed(1)+'px';u.bub.style.top=((1-_w.y)/2*innerHeight).toFixed(1)+'px'}}
+if(!FILM){const ray=new THREE.Raycaster(),_p=new THREE.Vector2();let down=null;
+ canvas.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY]});
+ canvas.addEventListener('pointerup',e=>{if(!down)return;const m=Math.hypot(e.clientX-down[0],e.clientY-down[1]);down=null;if(m>10)return;
+  _p.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(_p,camera);
+  let best=null,bd=1e9;for(const u of [U,U2]){if(!u||!u.hit)continue;for(const o of [u.hit,u.mesh]){const h=ray.intersectObject(o,false)[0];if(h&&h.distance<bd){bd=h.distance;best=u}}}
+  if(best)poke(best)})}
 // ---------- film ----------
 const SHOTS=[["opus",0,4.2],["monday",4.2,3.8],["my ex",8.0,3.8],["pizza",11.8,3.6],["cat",15.4,3.6],["luna",19.0,3.8]];const FILM_END=26.5;
 let cur=null;
@@ -352,8 +425,8 @@ function filmFrame(T){const s=SHOTS.find(s=>T>=s[1]&&T<s[1]+s[2]);
 // ---------- boot ----------
 Promise.all(['400','500','600'].map(w=>document.fonts.load(w+' 20px M'))).then(()=>{
  if(FILM){window.__frame=filmFrame;window.__ready=true;return}
- const q=new URLSearchParams(location.search).get('u');const w=q||'hello';$('word').value=q||'';build(w);showTitle(U);born=performance.now()-4000;camHome();
- (function loop(){requestAnimationFrame(loop);animate(U,(performance.now()-born)/1000);controls.update();composer.render()})()});
+ const q=new URLSearchParams(location.search).get('u');const w=q||'hello';$('word').value=q||'';spawn(w);showTitle(U);born=performance.now()-4000;U.helloAt=performance.now()+1500;if(U2)U2.helloAt=performance.now()+2700;camHome();
+ (function loop(){requestAnimationFrame(loop);const t=(performance.now()-born)/1000;animate(U,t);if(U2){animate(U2,t);pairPose(t)}hop(U,t);hop(U2,t);controls.update();bubbles();composer.render()})()});
 </script>
 </body>
 </html>
