@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Type a word. Get a planet.</title>
 <meta name="description" content="Every word is a different planet. Type one and watch it being born.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://0xsolty.github.io/universe/">
+<meta property="og:title" content="Type a word. Get a planet.">
+<meta property="og:description" content="Every word is a different planet. Type one and watch it being born.">
+<meta property="og:image" content="https://0xsolty.github.io/universe/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A glowing 3D planet generated from a word">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Type a word. Get a planet.">
+<meta name="twitter:description" content="Every word is a different planet. Type one and watch it being born.">
+<meta name="twitter:image" content="https://0xsolty.github.io/universe/og.png">
 <style>
 @font-face{font-family:"M";font-weight:400;src:url("fonts/ibm-plex-mono-latin-400-normal.woff2")}
 @font-face{font-family:"M";font-weight:500;src:url("fonts/ibm-plex-mono-latin-500-normal.woff2")}
@@ -27,6 +39,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--tx)
 #title .s{font:400 13px M;color:var(--dim);margin-top:10px;letter-spacing:1px}
 #actions{display:flex;gap:8px;opacity:0;transition:opacity .6s;flex-wrap:wrap;justify-content:center}
 #actions button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:var(--tx);border-radius:999px;font:500 13px M;padding:8px 14px;cursor:pointer}
+#actions #share{border-color:rgba(255,179,107,.6);color:var(--acc)}
+@media (max-width:420px){#actions{gap:6px}#actions button{font-size:12px;padding:7px 10px}}
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:4}
 #by{position:fixed;right:14px;bottom:10px;font:400 12px M;color:rgba(255,255,255,.35);z-index:6;text-decoration:none}
 #by:hover{color:#fff}
@@ -46,7 +60,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--tx)
 <div id="title"><div class="k">the planet of</div><div class="w" id="tw"></div><div class="s" id="ts"></div></div>
 <div id="ui">
  <form id="form" autocomplete="off"><input id="word" maxlength="40" placeholder="type any word…" aria-label="word"><button id="go" type="submit">create</button></form>
- <div id="actions"><button id="save" type="button">save image</button><button id="copy" type="button">copy link</button><button id="snd" type="button">sound: on</button></div>
+ <div id="actions"><button id="save" type="button">save</button><button id="share" type="button">share on X</button><button id="copy" type="button">copy link</button><button id="snd" type="button">sound: on</button></div>
  <div id="chips">try: <button>your name</button><button>monday</button><button>pizza</button><button>my ex</button><button>cat</button><button>coffee</button><button>money</button></div>
 </div>
 <a id="by" href="https://x.com/0xSolty" target="_blank" rel="noopener">by @0xSolty</a>
@@ -311,7 +325,13 @@ function playMusic(u){if(!soundOn)return;try{audio&&audio.close();audio=new (win
 }catch(e){}}
 $('form').addEventListener('submit',e=>{e.preventDefault();$('word').blur();create($('word').value)});
 document.querySelectorAll('#chips button').forEach(b=>b.addEventListener('click',()=>{if(b.textContent==='your name'){$('word').focus();return}$('word').value=b.textContent;create(b.textContent)}));
-$('save').addEventListener('click',()=>{composer.render();const a=document.createElement('a');a.download='planet-of-'+(U?U.word:'x').replace(/[^a-z0-9]+/gi,'-')+'.png';a.href=canvas.toDataURL('image/png');a.click()});
+const shareUrl=()=>location.origin+location.pathname+'?u='+encodeURIComponent(U?U.word:'');
+// phones: open the share sheet (save to photos / post) — blob is built synchronously so the tap still counts as a user gesture
+$('save').addEventListener('click',async()=>{composer.render();const name='planet-of-'+(U?U.word:'x').replace(/[^a-z0-9]+/gi,'-')+'.png';const url=canvas.toDataURL('image/png');
+ if(matchMedia('(pointer:coarse)').matches&&navigator.canShare){const b=atob(url.split(',')[1]),arr=new Uint8Array(b.length);for(let i=0;i<b.length;i++)arr[i]=b.charCodeAt(i);const file=new File([arr],name,{type:'image/png'});
+  if(navigator.canShare({files:[file]})){try{await navigator.share({files:[file]})}catch(e){}return}}
+ const a=document.createElement('a');a.download=name;a.href=url;a.click()});
+$('share').addEventListener('click',()=>{const text='the planet of "'+(U?U.word:'')+'" 🪐\n\nwhat\'s yours?';open('https://x.com/intent/post?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(shareUrl()),'_blank','noopener')});
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);$('copy').textContent='copied ✓';setTimeout(()=>$('copy').textContent='copy link',1500)}catch(e){}});
 $('snd').addEventListener('click',()=>{soundOn=!soundOn;$('snd').textContent='sound: '+(soundOn?'on':'off');if(!soundOn&&audio)audio.close()});
 // ---------- film ----------
